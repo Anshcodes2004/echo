@@ -37,6 +37,8 @@ export type Recording = {
   timeline?: TimedNote[];
   personalInsights?: { category: PersonalInsightCategory; items: TimedNote[] }[];
   transcript: TranscriptSegment[];
+  status: "recording" | "processing" | "ready" | "analysis_failed" | "failed";
+  analysisError?: string | null;
 };
 
 export const PERSONAL_CATEGORY_META: Record<
@@ -54,6 +56,7 @@ export const recordings: Recording[] = [
     id: "product-architecture-discussion",
     title: "Product Architecture Discussion",
     mode: "meeting",
+    status: "ready",
     durationMin: 42,
     when: "Today",
     createdAt: 5,
@@ -70,7 +73,11 @@ export const recordings: Recording[] = [
     ],
     decisions: [
       { id: "d1", time: "04:31", text: "Use MongoDB for the new service" },
-      { id: "d2", time: "16:20", text: "Move authentication to short-lived tokens with refresh rotation" },
+      {
+        id: "d2",
+        time: "16:20",
+        text: "Move authentication to short-lived tokens with refresh rotation",
+      },
       { id: "d3", time: "24:05", text: "Add WebSocket reconnection before the beta release" },
     ],
     actionItems: [
@@ -89,7 +96,13 @@ export const recordings: Recording[] = [
         deadline: "Next Tuesday",
         time: "17:02",
       },
-      { id: "a4", task: "Run a load test on the new API", owner: null, deadline: null, time: "29:40" },
+      {
+        id: "a4",
+        task: "Run a load test on the new API",
+        owner: null,
+        deadline: null,
+        time: "29:40",
+      },
     ],
     questions: [
       { id: "q1", time: "21:04", text: "Who will own the deployment process?" },
@@ -97,7 +110,11 @@ export const recordings: Recording[] = [
     ],
     risks: [
       { id: "r1", time: "31:17", text: "Current deployment timeline may be too aggressive." },
-      { id: "r2", time: "09:12", text: "API latency degrades noticeably above 500 concurrent users." },
+      {
+        id: "r2",
+        time: "09:12",
+        text: "API latency degrades noticeably above 500 concurrent users.",
+      },
     ],
     timeline: [
       { id: "tl1", time: "02:14", text: "Discussion started about database architecture" },
@@ -109,7 +126,12 @@ export const recordings: Recording[] = [
       { id: "tl7", time: "31:17", text: "Risk noted about the deployment timeline" },
     ],
     transcript: [
-      { id: "s1", time: "02:14", speaker: "Speaker 1", text: "Let's discuss the database architecture first." },
+      {
+        id: "s1",
+        time: "02:14",
+        speaker: "Speaker 1",
+        text: "Let's discuss the database architecture first.",
+      },
       {
         id: "s2",
         time: "02:31",
@@ -122,7 +144,12 @@ export const recordings: Recording[] = [
         speaker: "Speaker 3",
         text: "Agreed, as long as we're disciplined about indexes. Unbounded queries are what usually hurt us.",
       },
-      { id: "s4", time: "04:31", speaker: "Speaker 1", text: "Let's use MongoDB for the new service." },
+      {
+        id: "s4",
+        time: "04:31",
+        speaker: "Speaker 1",
+        text: "Let's use MongoDB for the new service.",
+      },
       {
         id: "s5",
         time: "05:21",
@@ -171,16 +198,26 @@ export const recordings: Recording[] = [
     id: "interview-preparation-thoughts",
     title: "Interview Preparation Thoughts",
     mode: "personal",
+    status: "ready",
     durationMin: 15,
     when: "Yesterday",
     createdAt: 4,
-    preview: "Ideas about preparation strategy and project improvements before next week's interviews.",
+    preview:
+      "Ideas about preparation strategy and project improvements before next week's interviews.",
     personalInsights: [
       {
         category: "ideas",
         items: [
-          { id: "i1", time: "03:14", text: "I should build a system to track my interview preparation." },
-          { id: "i2", time: "05:02", text: "A weekly retro on what I actually studied would keep me honest." },
+          {
+            id: "i1",
+            time: "03:14",
+            text: "I should build a system to track my interview preparation.",
+          },
+          {
+            id: "i2",
+            time: "05:02",
+            text: "A weekly retro on what I actually studied would keep me honest.",
+          },
         ],
       },
       {
@@ -197,8 +234,16 @@ export const recordings: Recording[] = [
       {
         category: "thoughts",
         items: [
-          { id: "th1", time: "12:41", text: "I'm worried the real-time component may be unstable." },
-          { id: "th2", time: "13:55", text: "I do my best thinking early in the morning, before messages start." },
+          {
+            id: "th1",
+            time: "12:41",
+            text: "I'm worried the real-time component may be unstable.",
+          },
+          {
+            id: "th2",
+            time: "13:55",
+            text: "I do my best thinking early in the morning, before messages start.",
+          },
         ],
       },
     ],
@@ -213,8 +258,16 @@ export const recordings: Recording[] = [
         time: "03:14",
         text: "I should build a system to track my interview preparation, otherwise I just drift between topics.",
       },
-      { id: "p3", time: "06:42", text: "Finish the project by Sunday. That's the hard deadline I'm giving myself." },
-      { id: "p4", time: "09:18", text: "Should I use MongoDB or PostgreSQL? I keep going back and forth on this." },
+      {
+        id: "p3",
+        time: "06:42",
+        text: "Finish the project by Sunday. That's the hard deadline I'm giving myself.",
+      },
+      {
+        id: "p4",
+        time: "09:18",
+        text: "Should I use MongoDB or PostgreSQL? I keep going back and forth on this.",
+      },
       {
         id: "p5",
         time: "12:41",
@@ -226,6 +279,7 @@ export const recordings: Recording[] = [
     id: "weekly-design-review",
     title: "Weekly Design Review",
     mode: "meeting",
+    status: "ready",
     durationMin: 28,
     when: "Monday",
     createdAt: 3,
@@ -240,31 +294,58 @@ export const recordings: Recording[] = [
     ],
     decisions: [{ id: "wd1", time: "12:08", text: "Standardise spacing on a four-point scale" }],
     actionItems: [
-      { id: "wa1", task: "Update the empty state copy", owner: "Maya", deadline: "Thursday", time: "20:31" },
-      { id: "wa2", task: "Export the revised onboarding frames", owner: null, deadline: null, time: "24:12" },
+      {
+        id: "wa1",
+        task: "Update the empty state copy",
+        owner: "Maya",
+        deadline: "Thursday",
+        time: "20:31",
+      },
+      {
+        id: "wa2",
+        task: "Export the revised onboarding frames",
+        owner: null,
+        deadline: null,
+        time: "24:12",
+      },
     ],
-    questions: [{ id: "wq1", time: "22:40", text: "Do we ship illustrations in the first release?" }],
-    risks: [{ id: "wr1", time: "26:05", text: "Illustration work may slip past the design freeze." }],
+    questions: [
+      { id: "wq1", time: "22:40", text: "Do we ship illustrations in the first release?" },
+    ],
+    risks: [
+      { id: "wr1", time: "26:05", text: "Illustration work may slip past the design freeze." },
+    ],
     timeline: [
       { id: "wtl1", time: "01:40", text: "Onboarding walkthrough started" },
       { id: "wtl2", time: "12:08", text: "Decision: four-point spacing scale" },
       { id: "wtl3", time: "20:31", text: "Action item assigned to Maya" },
     ],
     transcript: [
-      { id: "ws1", time: "01:40", speaker: "Speaker 1", text: "Let's start with the onboarding flow revisions." },
+      {
+        id: "ws1",
+        time: "01:40",
+        speaker: "Speaker 1",
+        text: "Let's start with the onboarding flow revisions.",
+      },
       {
         id: "ws2",
         time: "11:15",
         speaker: "Speaker 2",
         text: "Spacing is still inconsistent between the two screens.",
       },
-      { id: "ws3", time: "12:08", speaker: "Speaker 1", text: "Let's standardise on a four-point scale." },
+      {
+        id: "ws3",
+        time: "12:08",
+        speaker: "Speaker 1",
+        text: "Let's standardise on a four-point scale.",
+      },
     ],
   },
   {
     id: "morning-reflection",
     title: "Morning Reflection",
     mode: "personal",
+    status: "ready",
     durationMin: 8,
     when: "Last week",
     createdAt: 2,
@@ -272,11 +353,19 @@ export const recordings: Recording[] = [
     personalInsights: [
       {
         category: "ideas",
-        items: [{ id: "mi1", time: "01:22", text: "Block the first ninety minutes of the day for deep work." }],
+        items: [
+          {
+            id: "mi1",
+            time: "01:22",
+            text: "Block the first ninety minutes of the day for deep work.",
+          },
+        ],
       },
       {
         category: "goals",
-        items: [{ id: "mg1", time: "03:40", text: "Ship one meaningful thing before lunch each day." }],
+        items: [
+          { id: "mg1", time: "03:40", text: "Ship one meaningful thing before lunch each day." },
+        ],
       },
       {
         category: "questions",
@@ -284,13 +373,31 @@ export const recordings: Recording[] = [
       },
       {
         category: "thoughts",
-        items: [{ id: "mt1", time: "06:48", text: "Most of last week's stress came from unclear priorities." }],
+        items: [
+          {
+            id: "mt1",
+            time: "06:48",
+            text: "Most of last week's stress came from unclear priorities.",
+          },
+        ],
       },
     ],
     transcript: [
-      { id: "mp1", time: "01:22", text: "Blocking the first ninety minutes for deep work made a real difference." },
-      { id: "mp2", time: "03:40", text: "I want to ship one meaningful thing before lunch each day." },
-      { id: "mp3", time: "06:48", text: "Most of last week's stress came from unclear priorities, not workload." },
+      {
+        id: "mp1",
+        time: "01:22",
+        text: "Blocking the first ninety minutes for deep work made a real difference.",
+      },
+      {
+        id: "mp2",
+        time: "03:40",
+        text: "I want to ship one meaningful thing before lunch each day.",
+      },
+      {
+        id: "mp3",
+        time: "06:48",
+        text: "Most of last week's stress came from unclear priorities, not workload.",
+      },
     ],
   },
 ];

@@ -6,20 +6,18 @@ import {
   Download,
   FileText,
   HelpCircle,
+  Loader2,
   ListChecks,
   Pencil,
+  RefreshCw,
   Search,
   Sparkles,
   Trash2,
 } from "lucide-react";
 import { AppShell } from "@/components/echo/AppShell";
 import { Dot, Pill, SectionCard, TimeChip, type Tone } from "@/components/echo/primitives";
-import {
-  PERSONAL_CATEGORY_META,
-  type Recording,
-  type TranscriptSegment,
-} from "@/lib/echo-data";
-import { fetchRecording } from "@/lib/recording-api";
+import { PERSONAL_CATEGORY_META, type Recording, type TranscriptSegment } from "@/lib/echo-data";
+import { fetchRecording, retryAnalysis } from "@/lib/recording-api";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/recording/$id")({
@@ -59,7 +57,8 @@ function TranscriptView({ recording }: { recording: Recording }) {
   const [speaker, setSpeaker] = useState("all");
 
   const speakers = useMemo(
-    () => Array.from(new Set(recording.transcript.map((s) => s.speaker).filter(Boolean))) as string[],
+    () =>
+      Array.from(new Set(recording.transcript.map((s) => s.speaker).filter(Boolean))) as string[],
     [recording],
   );
 
@@ -103,7 +102,9 @@ function TranscriptView({ recording }: { recording: Recording }) {
             type="button"
             onClick={() =>
               navigator.clipboard?.writeText(
-                recording.transcript.map((s) => `${s.time} ${s.speaker ?? ""} ${s.text}`).join("\n"),
+                recording.transcript
+                  .map((s) => `${s.time} ${s.speaker ?? ""} ${s.text}`)
+                  .join("\n"),
               )
             }
             className="inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-2 text-[13px] transition-colors hover:bg-secondary"
@@ -234,6 +235,78 @@ function MeetingOverview({ recording }: { recording: Recording }) {
   );
 }
 
+function AnalysisStatusBanner({
+  recording,
+  onRetried,
+}: {
+  recording: Recording;
+  onRetried: (updated: Recording) => void;
+}) {
+  const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
+  if (recording.status === "ready") return null;
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    setRetryError(null);
+    try {
+      onRetried(await retryAnalysis(recording.id));
+    } catch (cause) {
+      setRetryError(cause instanceof Error ? cause.message : "Could not retry analysis.");
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  if (recording.status === "recording" || recording.status === "processing") {
+    return (
+      <div className="mb-5 flex items-center gap-3 rounded-2xl border border-border bg-secondary/60 px-5 py-4 text-sm">
+        <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" strokeWidth={1.8} />
+        <p className="text-muted-foreground">
+          {recording.status === "recording"
+            ? "This recording never finished — it hasn't been analyzed yet."
+            : "Analysis is still running."}
+        </p>
+        {recording.status === "recording" ? (
+          <button
+            type="button"
+            onClick={() => void handleRetry()}
+            disabled={retrying}
+            className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-[13px] font-medium hover:bg-secondary disabled:opacity-50"
+          >
+            <RefreshCw className={cn("size-3.5", retrying && "animate-spin")} strokeWidth={1.8} />
+            {retrying ? "Retrying..." : "Run analysis now"}
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-5 rounded-2xl border border-coral/40 bg-peach px-5 py-4 text-sm">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="mt-0.5 size-4 shrink-0 text-coral" strokeWidth={1.8} />
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-peach-foreground">AI analysis failed</p>
+          <p className="mt-1 text-peach-foreground/80">
+            {recording.analysisError ?? "The AI service didn't return a usable result."}
+          </p>
+          {retryError ? <p className="mt-1 text-coral">{retryError}</p> : null}
+        </div>
+        <button
+          type="button"
+          onClick={() => void handleRetry()}
+          disabled={retrying}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-coral/40 bg-card px-3.5 py-1.5 text-[13px] font-medium text-coral hover:bg-secondary disabled:opacity-50"
+        >
+          <RefreshCw className={cn("size-3.5", retrying && "animate-spin")} strokeWidth={1.8} />
+          {retrying ? "Retrying..." : "Retry analysis"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Timeline({ recording }: { recording: Recording }) {
   return (
     <section className="card-soft animate-rise p-7">
@@ -298,7 +371,8 @@ function PersonalResult({ recording }: { recording: Recording }) {
 const meetingTabs = ["Overview", "Transcript", "Action Items", "Timeline"] as const;
 
 function RecordingResult() {
-  const recording = Route.useLoaderData();
+  const loaderData = Route.useLoaderData();
+  const [recording, setRecording] = useState<Recording>(loaderData);
   const [tab, setTab] = useState<(typeof meetingTabs)[number]>("Overview");
   const isMeeting = recording.mode === "meeting";
 
@@ -343,9 +417,12 @@ function RecordingResult() {
         </div>
       </header>
 
+      <div className="mt-7">
+        <AnalysisStatusBanner recording={recording} onRetried={setRecording} />
+      </div>
       {isMeeting ? (
         <>
-          <div className="mt-7 flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-full border border-border bg-card p-1">
+          <div className="flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-full border border-border bg-card p-1">
             {meetingTabs.map((t) => (
               <button
                 key={t}
@@ -363,7 +440,7 @@ function RecordingResult() {
             ))}
           </div>
 
-          <div className="mt-6">
+          <div>
             {tab === "Overview" ? <MeetingOverview recording={recording} /> : null}
             {tab === "Transcript" ? <TranscriptView recording={recording} /> : null}
             {tab === "Action Items" ? (
@@ -382,7 +459,9 @@ function RecordingResult() {
                       <div>
                         <p className="text-sm font-medium">{a.task}</p>
                         <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-                          <span className={cn(!a.owner && "italic")}>{a.owner ?? "Unassigned"}</span>
+                          <span className={cn(!a.owner && "italic")}>
+                            {a.owner ?? "Unassigned"}
+                          </span>
                           <span className="text-border">·</span>
                           <span className={cn(!a.deadline && "italic")}>
                             {a.deadline ? `Due ${a.deadline}` : "No deadline specified"}
@@ -400,7 +479,7 @@ function RecordingResult() {
           </div>
         </>
       ) : (
-        <div className="mt-7">
+        <div>
           <PersonalResult recording={recording} />
         </div>
       )}
