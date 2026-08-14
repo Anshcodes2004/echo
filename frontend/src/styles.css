@@ -1,0 +1,225 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Echo design system — calm, premium, pastel.
+ * All colors are oklch semantic tokens. Never hardcode colors in components.
+ */
+
+@theme inline {
+  --font-sans:
+    "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Outfit", "Figtree", ui-sans-serif, system-ui, sans-serif;
+
+
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 6px);
+  --radius-lg: calc(var(--radius) - 4px);
+  --radius-xl: var(--radius);
+  --radius-2xl: calc(var(--radius) + 6px);
+  --radius-3xl: calc(var(--radius) + 12px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+
+  /* Pastel palette */
+  --color-lavender: var(--lavender);
+  --color-lavender-strong: var(--lavender-strong);
+  --color-lavender-foreground: var(--lavender-foreground);
+  --color-lilac: var(--lilac);
+  --color-sage: var(--sage);
+  --color-sage-strong: var(--sage-strong);
+  --color-sage-foreground: var(--sage-foreground);
+  --color-dusty: var(--dusty);
+  --color-dusty-strong: var(--dusty-strong);
+  --color-dusty-foreground: var(--dusty-foreground);
+  --color-peach: var(--peach);
+  --color-peach-strong: var(--peach-strong);
+  --color-peach-foreground: var(--peach-foreground);
+  --color-coral: var(--coral);
+  --color-coral-foreground: var(--coral-foreground);
+  --color-surface: var(--surface);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+
+  --shadow-soft: 0 1px 2px oklch(0.45 0.03 55 / 5%), 0 10px 28px oklch(0.45 0.03 55 / 6%);
+  --shadow-lift: 0 2px 8px oklch(0.45 0.03 55 / 7%), 0 22px 48px oklch(0.45 0.03 55 / 9%);
+
+
+  --animate-pulse-dot: pulse-dot 1.8s ease-in-out infinite;
+  --animate-rise: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.35s ease both;
+  --animate-breathe: breathe 3.2s ease-in-out infinite;
+
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.45;
+      transform: scale(0.82);
+    }
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes breathe {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 0.55;
+    }
+    50% {
+      transform: scale(1.06);
+      opacity: 0.8;
+    }
+  }
+}
+
+:root {
+  --radius: 1.25rem;
+
+  /* Warm Clay — hushed ivory base, soft neutrals, ember accent for meetings */
+  --background: oklch(0.958 0.008 86);
+  --foreground: oklch(0.34 0.011 58);
+  --surface: oklch(0.944 0.01 82);
+
+  --card: oklch(0.982 0.005 86);
+  --card-foreground: oklch(0.34 0.011 58);
+  --popover: oklch(0.982 0.005 86);
+  --popover-foreground: oklch(0.34 0.011 58);
+
+  /* primary = meeting energy: warmer, deeper ember terracotta */
+  --primary: oklch(0.575 0.128 42);
+  --primary-foreground: oklch(0.985 0.006 84);
+  --secondary: oklch(0.935 0.009 82);
+  --secondary-foreground: oklch(0.4 0.012 58);
+  --muted: oklch(0.935 0.009 82);
+  --muted-foreground: oklch(0.575 0.012 66);
+  --accent: oklch(0.925 0.014 70);
+  --accent-foreground: oklch(0.45 0.05 46);
+  --destructive: oklch(0.55 0.125 30);
+  --destructive-foreground: oklch(0.985 0.006 84);
+
+  --border: oklch(0.916 0.009 80);
+  --input: oklch(0.916 0.009 80);
+  --ring: oklch(0.62 0.11 44);
+
+  /* clay / ember — meeting mode (kept lively) */
+  --lavender: oklch(0.9 0.032 56);
+  --lavender-strong: oklch(0.598 0.125 42);
+  --lavender-foreground: oklch(0.42 0.085 42);
+  --lilac: oklch(0.862 0.045 52);
+
+  /* moss — personal mode (calmed down) */
+  --sage: oklch(0.926 0.013 132);
+  --sage-strong: oklch(0.66 0.03 132);
+  --sage-foreground: oklch(0.45 0.026 132);
+
+  /* stone (calmed) */
+  --dusty: oklch(0.928 0.007 98);
+  --dusty-strong: oklch(0.685 0.012 98);
+  --dusty-foreground: oklch(0.46 0.012 84);
+
+  /* sand (calmed) */
+  --sand: oklch(0.94 0.017 80);
+  --peach: oklch(0.94 0.017 80);
+  --peach-strong: oklch(0.85 0.03 74);
+  --peach-foreground: oklch(0.47 0.035 62);
+
+  --coral: oklch(0.6 0.135 38);
+  --coral-foreground: oklch(0.985 0.006 84);
+
+  --sidebar: oklch(0.948 0.009 84);
+  --sidebar-foreground: oklch(0.39 0.011 58);
+  --sidebar-accent: oklch(0.984 0.005 86);
+  --sidebar-accent-foreground: oklch(0.43 0.075 44);
+  --sidebar-border: oklch(0.915 0.009 80);
+
+}
+
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    letter-spacing: -0.004em;
+    line-height: 1.6;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+
+  }
+}
+
+@utility card-soft {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-soft);
+}
+
+@utility hover-lift {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lift);
+  }
+}

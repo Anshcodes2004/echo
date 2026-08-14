@@ -1,0 +1,418 @@
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  Copy,
+  Download,
+  FileText,
+  HelpCircle,
+  ListChecks,
+  Pencil,
+  Search,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
+import { AppShell } from "@/components/echo/AppShell";
+import { Dot, Pill, SectionCard, TimeChip, type Tone } from "@/components/echo/primitives";
+import {
+  PERSONAL_CATEGORY_META,
+  type Recording,
+  type TranscriptSegment,
+} from "@/lib/echo-data";
+import { fetchRecording } from "@/lib/recording-api";
+import { cn } from "@/lib/utils";
+
+export const Route = createFileRoute("/recording/$id")({
+  loader: async ({ params }) => {
+    const rec = await fetchRecording(params.id);
+    if (!rec) throw notFound();
+    return rec;
+  },
+  head: ({ loaderData }) => {
+    const title = loaderData?.title ?? "Recording";
+    const desc =
+      loaderData?.preview ?? "Review the transcript and insights from this Echo recording.";
+    return {
+      meta: [
+        { title: `${title} — Echo` },
+        { name: "description", content: desc },
+        { property: "og:title", content: `${title} — Echo` },
+        { property: "og:description", content: desc },
+        { property: "og:type", content: "article" },
+        { name: "twitter:card", content: "summary_large_image" },
+      ],
+    };
+  },
+  component: RecordingResult,
+});
+
+const speakerTones: Tone[] = ["lavender", "sage", "dusty", "peach"];
+
+function speakerTone(speaker: string | undefined, speakers: string[]): Tone {
+  if (!speaker) return "neutral";
+  const idx = speakers.indexOf(speaker);
+  return speakerTones[idx % speakerTones.length] ?? "neutral";
+}
+
+function TranscriptView({ recording }: { recording: Recording }) {
+  const [query, setQuery] = useState("");
+  const [speaker, setSpeaker] = useState("all");
+
+  const speakers = useMemo(
+    () => Array.from(new Set(recording.transcript.map((s) => s.speaker).filter(Boolean))) as string[],
+    [recording],
+  );
+
+  const segments = recording.transcript.filter(
+    (s: TranscriptSegment) =>
+      (speaker === "all" || s.speaker === speaker) &&
+      (!query.trim() || s.text.toLowerCase().includes(query.trim().toLowerCase())),
+  );
+
+  return (
+    <section className="card-soft animate-rise overflow-hidden">
+      <header className="flex flex-col gap-3 border-b border-border px-6 py-4 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search
+            className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground"
+            strokeWidth={1.8}
+          />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search transcript..."
+            className="h-10 w-full rounded-full border border-border bg-background pr-4 pl-10 text-sm outline-none focus:ring-2 focus:ring-ring/40"
+          />
+        </div>
+        {speakers.length > 0 ? (
+          <select
+            value={speaker}
+            onChange={(e) => setSpeaker(e.target.value)}
+            className="h-10 rounded-full border border-border bg-background px-4 text-[13px] outline-none focus:ring-2 focus:ring-ring/40"
+          >
+            <option value="all">All speakers</option>
+            {speakers.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        ) : null}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              navigator.clipboard?.writeText(
+                recording.transcript.map((s) => `${s.time} ${s.speaker ?? ""} ${s.text}`).join("\n"),
+              )
+            }
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-2 text-[13px] transition-colors hover:bg-secondary"
+          >
+            <Copy className="size-3.5" strokeWidth={1.8} /> Copy
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-2 text-[13px] transition-colors hover:bg-secondary"
+          >
+            <Pencil className="size-3.5" strokeWidth={1.8} /> Edit
+          </button>
+        </div>
+      </header>
+
+      <div className="divide-y divide-border">
+        {segments.map((s) => (
+          <div key={s.id} className="animate-fade-in px-6 py-5">
+            <div className="flex items-center gap-2.5">
+              {s.speaker ? (
+                <span className="inline-flex items-center gap-2 text-[13px] font-medium">
+                  <Dot tone={speakerTone(s.speaker, speakers)} />
+                  {s.speaker}
+                </span>
+              ) : null}
+              <TimeChip time={s.time} />
+            </div>
+            <p className="mt-1.5 text-[15px] leading-relaxed text-foreground/85">"{s.text}"</p>
+          </div>
+        ))}
+        {segments.length === 0 ? (
+          <p className="px-6 py-12 text-center text-sm text-muted-foreground">
+            No transcript segments match your search.
+          </p>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function MeetingOverview({ recording }: { recording: Recording }) {
+  return (
+    <div className="space-y-5">
+      <SectionCard title="Summary" icon={<Sparkles />} tone="lavender">
+        <p className="text-[15px] leading-relaxed text-foreground/80">{recording.summary}</p>
+      </SectionCard>
+
+      <SectionCard
+        title="Action Items"
+        icon={<ListChecks />}
+        tone="lavender"
+        className="border-lavender-strong/40"
+      >
+        <ul className="space-y-1">
+          {(recording.actionItems ?? []).map((a) => (
+            <li
+              key={a.id}
+              className="flex items-start gap-3 rounded-xl px-2 py-3 transition-colors hover:bg-secondary/60"
+            >
+              <input
+                type="checkbox"
+                aria-label={a.task}
+                className="mt-0.5 size-4 shrink-0 rounded-[5px] border border-border accent-[var(--lavender-strong)]"
+              />
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{a.task}</p>
+                <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                  <span className={cn(!a.owner && "italic")}>{a.owner ?? "Unassigned"}</span>
+                  <span className="text-border">·</span>
+                  <span className={cn(!a.deadline && "italic")}>
+                    {a.deadline ? `Due ${a.deadline}` : "No deadline specified"}
+                  </span>
+                  <span className="text-border">·</span>
+                  <TimeChip time={a.time} className="-ml-1" />
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </SectionCard>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <SectionCard title="Key Topics" icon={<FileText />} tone="dusty">
+          <ul className="space-y-3">
+            {(recording.topics ?? []).map((t) => (
+              <li key={t.id} className="flex items-center gap-3 text-sm">
+                <TimeChip time={t.time} className="-ml-1.5" />
+                <span>{t.text}</span>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+
+        <SectionCard title="Decisions" icon={<Sparkles />} tone="sage">
+          <ul className="space-y-4">
+            {(recording.decisions ?? []).map((d) => (
+              <li key={d.id}>
+                <TimeChip time={d.time} className="-ml-1.5" />
+                <p className="mt-0.5 text-sm">{d.text}</p>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+
+        <SectionCard title="Open Questions" icon={<HelpCircle />} tone="dusty">
+          <ul className="space-y-4">
+            {(recording.questions ?? []).map((q) => (
+              <li key={q.id}>
+                <TimeChip time={q.time} className="-ml-1.5" />
+                <p className="mt-0.5 text-sm">"{q.text}"</p>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+
+        <SectionCard title="Risks / Concerns" icon={<AlertTriangle />} tone="peach">
+          <ul className="space-y-4">
+            {(recording.risks ?? []).map((r) => (
+              <li key={r.id}>
+                <TimeChip time={r.time} className="-ml-1.5" />
+                <p className="mt-0.5 text-sm">"{r.text}"</p>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+      </div>
+    </div>
+  );
+}
+
+function Timeline({ recording }: { recording: Recording }) {
+  return (
+    <section className="card-soft animate-rise p-7">
+      <ol className="relative space-y-7 border-l border-border pl-7">
+        {(recording.timeline ?? []).map((t) => (
+          <li key={t.id} className="relative">
+            <span className="absolute top-1.5 -left-[33px] size-2.5 rounded-full bg-lavender-strong ring-4 ring-card" />
+            <TimeChip time={t.time} className="-ml-1.5" />
+            <p className="mt-0.5 text-sm">{t.text}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function PersonalResult({ recording }: { recording: Recording }) {
+  return (
+    <div className="space-y-5">
+      <TranscriptView recording={recording} />
+
+      <div>
+        <h2 className="mt-8 mb-1 text-[15px] font-semibold">Insights</h2>
+        <p className="mb-4 text-[13px] text-muted-foreground">
+          What you said, grouped so it's easier to revisit.
+        </p>
+        <div className="grid gap-5 lg:grid-cols-2">
+          {(recording.personalInsights ?? []).map((group) => {
+            const meta = PERSONAL_CATEGORY_META[group.category];
+            return (
+              <section
+                key={group.category}
+                className={cn(
+                  "animate-rise rounded-3xl border border-border p-6 shadow-soft",
+                  meta.tone === "lavender" && "bg-lavender/60",
+                  meta.tone === "sage" && "bg-sage/60",
+                  meta.tone === "dusty" && "bg-dusty/60",
+                  meta.tone === "peach" && "bg-peach/60",
+                )}
+              >
+                <h3 className="flex items-center gap-2 text-[15px] font-semibold">
+                  <span aria-hidden>{meta.emoji}</span>
+                  {meta.label}
+                </h3>
+                <ul className="mt-4 space-y-3">
+                  {group.items.map((i) => (
+                    <li key={i.id} className="rounded-2xl bg-card/80 px-4 py-3">
+                      <TimeChip time={i.time} className="-ml-1.5" />
+                      <p className="mt-0.5 text-sm leading-relaxed">"{i.text}"</p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const meetingTabs = ["Overview", "Transcript", "Action Items", "Timeline"] as const;
+
+function RecordingResult() {
+  const recording = Route.useLoaderData();
+  const [tab, setTab] = useState<(typeof meetingTabs)[number]>("Overview");
+  const isMeeting = recording.mode === "meeting";
+
+  return (
+    <AppShell>
+      <header className="animate-rise flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-[24px] font-semibold sm:text-[28px]">
+              {isMeeting ? recording.title : "Personal Recording"}
+            </h1>
+            <Pill tone={isMeeting ? "lavender" : "sage"}>{recording.mode}</Pill>
+          </div>
+          <p className="mt-1.5 text-[13px] text-muted-foreground">
+            {recording.durationMin} min
+            {isMeeting && recording.speakers ? ` • ${recording.speakers} speakers` : ""} •{" "}
+            {recording.when}
+          </p>
+          {!isMeeting ? (
+            <p className="mt-2 max-w-lg text-sm text-muted-foreground">{recording.title}</p>
+          ) : null}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {[
+            { label: "Rename", icon: Pencil },
+            { label: "Download", icon: Download },
+            { label: "Delete", icon: Trash2 },
+          ].map(({ label, icon: Icon }) => (
+            <button
+              key={label}
+              type="button"
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-[13px] transition-colors hover:bg-secondary",
+                label === "Delete" && "text-coral hover:bg-peach",
+              )}
+            >
+              <Icon className="size-3.5" strokeWidth={1.8} />
+              {label}
+            </button>
+          ))}
+        </div>
+      </header>
+
+      {isMeeting ? (
+        <>
+          <div className="mt-7 flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-full border border-border bg-card p-1">
+            {meetingTabs.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTab(t)}
+                className={cn(
+                  "shrink-0 rounded-full px-4 py-2 text-[13px] font-medium transition-colors",
+                  tab === t
+                    ? "bg-lavender text-lavender-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-6">
+            {tab === "Overview" ? <MeetingOverview recording={recording} /> : null}
+            {tab === "Transcript" ? <TranscriptView recording={recording} /> : null}
+            {tab === "Action Items" ? (
+              <SectionCard title="Action Items" icon={<ListChecks />} tone="lavender">
+                <ul className="space-y-1">
+                  {(recording.actionItems ?? []).map((a) => (
+                    <li
+                      key={a.id}
+                      className="flex items-start gap-3 rounded-xl px-2 py-3 transition-colors hover:bg-secondary/60"
+                    >
+                      <input
+                        type="checkbox"
+                        aria-label={a.task}
+                        className="mt-0.5 size-4 shrink-0 rounded-[5px] border border-border"
+                      />
+                      <div>
+                        <p className="text-sm font-medium">{a.task}</p>
+                        <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                          <span className={cn(!a.owner && "italic")}>{a.owner ?? "Unassigned"}</span>
+                          <span className="text-border">·</span>
+                          <span className={cn(!a.deadline && "italic")}>
+                            {a.deadline ? `Due ${a.deadline}` : "No deadline specified"}
+                          </span>
+                          <span className="text-border">·</span>
+                          <TimeChip time={a.time} className="-ml-1" />
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </SectionCard>
+            ) : null}
+            {tab === "Timeline" ? <Timeline recording={recording} /> : null}
+          </div>
+        </>
+      ) : (
+        <div className="mt-7">
+          <PersonalResult recording={recording} />
+        </div>
+      )}
+
+      <div className="mt-8">
+        <Link
+          to="/history"
+          className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+        >
+          ← Back to all recordings
+        </Link>
+      </div>
+    </AppShell>
+  );
+}
