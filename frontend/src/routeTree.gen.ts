@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SigninRouteImport } from './routes/signin'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as RecordIndexRouteImport } from './routes/record/index'
 import { Route as RecordModeRouteImport } from './routes/record/$mode'
 import { Route as RecordingIdRouteImport } from './routes/recording/$id'
@@ -37,6 +39,16 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SigninRoute = SigninRouteImport.update({
+  id: '/signin',
+  path: '/signin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecordIndexRoute = RecordIndexRouteImport.update({
   id: '/record/',
   path: '/record/',
@@ -58,6 +70,8 @@ export interface FileRoutesByFullPath {
   '/history': typeof HistoryRoute
   '/insights': typeof InsightsRoute
   '/settings': typeof SettingsRoute
+  '/signin': typeof SigninRoute
+  '/signup': typeof SignupRoute
   '/record/$mode': typeof RecordModeRoute
   '/recording/$id': typeof RecordingIdRoute
   '/record/': typeof RecordIndexRoute
@@ -67,6 +81,8 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRoute
   '/insights': typeof InsightsRoute
   '/settings': typeof SettingsRoute
+  '/signin': typeof SigninRoute
+  '/signup': typeof SignupRoute
   '/record/$mode': typeof RecordModeRoute
   '/recording/$id': typeof RecordingIdRoute
   '/record': typeof RecordIndexRoute
@@ -77,6 +93,8 @@ export interface FileRoutesById {
   '/history': typeof HistoryRoute
   '/insights': typeof InsightsRoute
   '/settings': typeof SettingsRoute
+  '/signin': typeof SigninRoute
+  '/signup': typeof SignupRoute
   '/record/$mode': typeof RecordModeRoute
   '/recording/$id': typeof RecordingIdRoute
   '/record/': typeof RecordIndexRoute
@@ -88,6 +106,8 @@ export interface FileRouteTypes {
     | '/history'
     | '/insights'
     | '/settings'
+    | '/signin'
+    | '/signup'
     | '/record/$mode'
     | '/recording/$id'
     | '/record/'
@@ -97,6 +117,8 @@ export interface FileRouteTypes {
     | '/history'
     | '/insights'
     | '/settings'
+    | '/signin'
+    | '/signup'
     | '/record/$mode'
     | '/recording/$id'
     | '/record'
@@ -106,6 +128,8 @@ export interface FileRouteTypes {
     | '/history'
     | '/insights'
     | '/settings'
+    | '/signin'
+    | '/signup'
     | '/record/$mode'
     | '/recording/$id'
     | '/record/'
@@ -116,6 +140,8 @@ export interface RootRouteChildren {
   HistoryRoute: typeof HistoryRoute
   InsightsRoute: typeof InsightsRoute
   SettingsRoute: typeof SettingsRoute
+  SigninRoute: typeof SigninRoute
+  SignupRoute: typeof SignupRoute
   RecordModeRoute: typeof RecordModeRoute
   RecordingIdRoute: typeof RecordingIdRoute
   RecordIndexRoute: typeof RecordIndexRoute
@@ -151,6 +177,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/signin': {
+      id: '/signin'
+      path: '/signin'
+      fullPath: '/signin'
+      preLoaderRoute: typeof SigninRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/record/': {
       id: '/record/'
       path: '/record'
@@ -180,6 +220,8 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryRoute: HistoryRoute,
   InsightsRoute: InsightsRoute,
   SettingsRoute: SettingsRoute,
+  SigninRoute: SigninRoute,
+  SignupRoute: SignupRoute,
   RecordModeRoute: RecordModeRoute,
   RecordingIdRoute: RecordingIdRoute,
   RecordIndexRoute: RecordIndexRoute,

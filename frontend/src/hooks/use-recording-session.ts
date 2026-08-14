@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Mode } from "@/lib/echo-data";
+import { getToken } from "@/lib/auth-api";
 
 export type LiveSegment = { id: string; time: string; speaker?: string; text: string };
 type State = "starting" | "recording" | "processing" | "error";
@@ -51,10 +52,14 @@ export function useRecordingSession(mode: Mode, onComplete: (id: string) => void
       try {
         if (!navigator.mediaDevices?.getUserMedia || !window.WebSocket || !window.AudioContext)
           throw new Error("This browser does not support live microphone recording.");
+        const token = getToken();
         const [response, mic] = await Promise.all([
           fetch(`${api}/api/recordings`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: Object.assign(
+              { "Content-Type": "application/json" },
+              token ? { Authorization: `Bearer ${token}` } : {},
+            ),
             body: JSON.stringify({ mode }),
           }),
           navigator.mediaDevices.getUserMedia({
@@ -79,7 +84,11 @@ export function useRecordingSession(mode: Mode, onComplete: (id: string) => void
         processor.current = node;
         source.connect(node);
         node.connect(ctx.destination);
-        const ws = new WebSocket(`${wsBase}/ws/transcriptions/${recording.id}`);
+        const tokenForWs = getToken();
+        const wsUrl = tokenForWs
+          ? `${wsBase}/ws/transcriptions/${recording.id}?token=${encodeURIComponent(tokenForWs)}`
+          : `${wsBase}/ws/transcriptions/${recording.id}`;
+        const ws = new WebSocket(wsUrl);
         socket.current = ws;
         ws.binaryType = "arraybuffer";
         ws.onopen = () => {

@@ -5,6 +5,7 @@ import { AppShell } from "@/components/echo/AppShell";
 import { RecordDial } from "@/components/echo/RecordDial";
 import { type Mode, type Recording, formatDuration } from "@/lib/echo-data";
 import { fetchRecordings } from "@/lib/recording-api";
+import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -44,6 +45,7 @@ const modes = [
 ];
 
 function Home() {
+  const { user } = useAuth();
   const [mode, setMode] = useState<Mode>("personal");
   const [recent, setRecent] = useState<Recording[]>([]);
   useEffect(() => {
@@ -56,7 +58,9 @@ function Home() {
     <AppShell>
       <div className="mx-auto flex w-full max-w-2xl flex-col items-center">
         <header className="animate-rise text-center">
-          <h1 className="text-[28px] font-semibold sm:text-[34px]">Good morning, Ansh</h1>
+          <h1 className="text-[28px] font-semibold sm:text-[34px]">
+            Good morning, {user ? (user.name ?? user.email.split("@")[0]) : "Ansh"}
+          </h1>
           <p className="mt-2 text-[15px] text-muted-foreground">
             Press once. Echo listens, writes it down, and pulls out what matters.
           </p>

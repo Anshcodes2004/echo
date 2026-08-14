@@ -1,8 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import AuthGuardLink from "./AuthGuardLink";
 import { Home, Mic, Library, Sparkles, Settings as SettingsIcon, AudioLines } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { fetchRecordings } from "@/lib/recording-api";
+import { useAuth } from "@/lib/auth-context";
 
 const MONTHLY_LIMIT_SECONDS = 10 * 60 * 60; // 10h
 
@@ -21,7 +23,7 @@ function NavItems({ pathname, compact }: { pathname: string; compact?: boolean }
         const active =
           to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`);
         return (
-          <Link
+          <AuthGuardLink
             key={to}
             to={to}
             className={cn(
@@ -37,7 +39,7 @@ function NavItems({ pathname, compact }: { pathname: string; compact?: boolean }
               strokeWidth={1.8}
             />
             {label}
-          </Link>
+          </AuthGuardLink>
         );
       })}
     </nav>
@@ -68,12 +70,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[236px] flex-col border-r border-sidebar-border bg-sidebar px-4 py-6 md:flex lg:w-[248px]">
-        <Link to="/" className="mb-8 flex items-center gap-2.5 px-2">
+        <AuthGuardLink to="/" className="mb-8 flex items-center gap-2.5 px-2">
           <span className="flex size-9 items-center justify-center rounded-xl bg-lavender-strong text-primary-foreground">
             <AudioLines className="size-[18px]" strokeWidth={2} />
           </span>
           <span className="text-[17px] font-semibold tracking-tight">Echo</span>
-        </Link>
+        </AuthGuardLink>
 
         <NavItems pathname={pathname} />
 
@@ -91,18 +93,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 rounded-2xl px-2 py-1.5">
-            <span className="flex size-9 items-center justify-center rounded-full bg-dusty text-sm font-semibold text-dusty-foreground">
-              A
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium">Ansh Kohli</p>
-              <p className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
-                <span className="size-1.5 rounded-full bg-sage-strong" />
-                Pro plan
-              </p>
-            </div>
-          </div>
+          <UserArea />
         </div>
       </aside>
 
@@ -114,6 +105,36 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-2 py-1.5 backdrop-blur md:hidden">
         <NavItems pathname={pathname} compact />
+      </div>
+    </div>
+  );
+}
+
+function UserArea() {
+  const { user, signOut } = useAuth();
+  return (
+    <div className="flex items-center gap-3 rounded-2xl px-2 py-1.5">
+      <span className="flex size-9 items-center justify-center rounded-full bg-dusty text-sm font-semibold text-dusty-foreground">
+        {user ? user.email[0]?.toUpperCase() : "G"}
+      </span>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium">{user ? user.email : "Guest"}</p>
+        <div className="mt-1 flex items-center gap-2">
+          {user ? (
+            <button onClick={() => signOut()} className="text-xs text-destructive hover:underline">
+              Sign out
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <Link to="/signin" className="text-xs text-muted-foreground hover:underline">
+                Sign in
+              </Link>
+              <Link to="/signup" className="text-xs text-muted-foreground hover:underline">
+                Sign up
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

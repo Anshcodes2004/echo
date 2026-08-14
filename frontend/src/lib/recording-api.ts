@@ -7,34 +7,70 @@ import type {
   TranscriptSegment,
 } from "./echo-data";
 const api = import.meta.env["VITE_API_BASE_URL"] ?? "http://localhost:3001";
+import { getToken, clearToken } from "./auth-api";
 
 export async function fetchRecording(id: string): Promise<Recording | null> {
-  const response = await fetch(`${api}/api/recordings/${id}`);
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(`${api}/api/recordings/${id}`, { headers });
   if (response.status === 404) return null;
+  if (response.status === 401) {
+    clearToken();
+    throw new Error("Unauthorized");
+  }
   if (!response.ok) throw new Error("Could not load this recording.");
   return toRecording(await response.json());
 }
 export async function fetchRecordings(): Promise<Recording[]> {
-  const response = await fetch(`${api}/api/recordings`);
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(`${api}/api/recordings`, { headers });
+  if (response.status === 401) {
+    clearToken();
+    throw new Error("Unauthorized");
+  }
   if (!response.ok) throw new Error("Could not load recordings.");
   const data = (await response.json()) as { recordings: unknown[] };
   return data.recordings.map(toRecording);
 }
 export async function deleteRecording(id: string) {
-  const response = await fetch(`${api}/api/recordings/${id}`, { method: "DELETE" });
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(`${api}/api/recordings/${id}`, { method: "DELETE", headers });
+  if (response.status === 401) {
+    clearToken();
+    throw new Error("Unauthorized");
+  }
   if (!response.ok) throw new Error("Could not delete recording.");
 }
 export async function retryAnalysis(id: string): Promise<Recording> {
-  const response = await fetch(`${api}/api/recordings/${id}/finalize`, { method: "POST" });
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(`${api}/api/recordings/${id}/finalize`, { method: "POST", headers });
+  if (response.status === 401) {
+    clearToken();
+    throw new Error("Unauthorized");
+  }
   if (!response.ok) throw new Error("Could not retry analysis.");
   return toRecording(await response.json());
 }
 export async function renameRecording(id: string, title: string): Promise<Recording> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
   const response = await fetch(`${api}/api/recordings/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ title }),
   });
+  if (response.status === 401) {
+    clearToken();
+    throw new Error("Unauthorized");
+  }
   if (!response.ok) throw new Error("Could not rename recording.");
   return toRecording(await response.json());
 }

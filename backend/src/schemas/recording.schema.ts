@@ -18,42 +18,71 @@ const timedInsightSchema = new Schema(
   { _id: false },
 );
 const actionItemSchema = new Schema(
-  { ...timedInsightSchema.obj, task: String, owner: { type: String, default: null }, deadline: { type: String, default: null } },
+  {
+    ...timedInsightSchema.obj,
+    task: String,
+    owner: { type: String, default: null },
+    deadline: { type: String, default: null },
+  },
   { _id: false },
 );
 
 const meetingInsightsSchema = new Schema(
-  { summary: String, topics: [timedInsightSchema], decisions: [timedInsightSchema], actionItems: [actionItemSchema], openQuestions: [timedInsightSchema], risks: [timedInsightSchema], importantMoments: [timedInsightSchema] },
+  {
+    summary: String,
+    topics: [timedInsightSchema],
+    decisions: [timedInsightSchema],
+    actionItems: [actionItemSchema],
+    openQuestions: [timedInsightSchema],
+    risks: [timedInsightSchema],
+    importantMoments: [timedInsightSchema],
+  },
   { _id: false },
 );
 const personalInsightsSchema = new Schema(
-  { ideas: [timedInsightSchema], goals: [timedInsightSchema], questions: [timedInsightSchema], importantThoughts: [timedInsightSchema], thingsToRevisit: [timedInsightSchema] },
+  {
+    ideas: [timedInsightSchema],
+    goals: [timedInsightSchema],
+    questions: [timedInsightSchema],
+    importantThoughts: [timedInsightSchema],
+    thingsToRevisit: [timedInsightSchema],
+  },
   { _id: false },
 );
 
 const recordingSchema = new Schema(
   {
+    userId: { type: Schema.Types.ObjectId, required: true, ref: "User" },
     mode: { type: String, enum: ["meeting", "personal"], required: true },
-    status: { type: String, enum: ["recording", "processing", "ready", "analysis_failed", "failed"], required: true, default: "recording" },
+    status: {
+      type: String,
+      enum: ["recording", "processing", "ready", "analysis_failed", "failed"],
+      required: true,
+      default: "recording",
+    },
     title: { type: String, required: true, trim: true, maxlength: 160 },
     transcriptionLanguage: { type: String, default: "en-US", maxlength: 24 },
     startedAt: { type: Date, required: true },
     endedAt: { type: Date, default: null },
     durationSeconds: { type: Number, default: 0, min: 0 },
     transcript: { type: [transcriptSegmentSchema], default: [] },
-    insights: { meeting: meetingInsightsSchema, personal: personalInsightsSchema },
+    insights: {
+      meeting: meetingInsightsSchema,
+      personal: personalInsightsSchema,
+    },
     analysisError: { type: String, default: null },
   },
   { timestamps: true, versionKey: false },
 );
 
-recordingSchema.index({ createdAt: -1 });
-recordingSchema.index({ mode: 1, createdAt: -1 });
+recordingSchema.index({ userId: 1, createdAt: -1 });
+recordingSchema.index({ userId: 1, mode: 1, createdAt: -1 });
 recordingSchema.index({ title: "text", "transcript.text": "text" });
 
 export type RecordingDocument = {
   _id: { toString(): string };
   mode: RecordingMode;
+  userId: string;
   status: RecordingStatus;
   title: string;
   transcriptionLanguage: string;

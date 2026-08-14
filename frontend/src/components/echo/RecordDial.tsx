@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import AuthGuardLink from "./AuthGuardLink";
 import { Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Mode } from "@/lib/echo-data";
@@ -7,10 +7,10 @@ export function RecordDial({ mode }: { mode: Mode }) {
   const isMeeting = mode === "meeting";
 
   return (
-    <Link
+    <AuthGuardLink
       to="/record/$mode"
       params={{ mode }}
-      aria-label={isMeeting ? "Start a meeting recording" : "Start a personal recording"}
+      ariaLabel={isMeeting ? "Start a meeting recording" : "Start a personal recording"}
       className="group relative flex size-[186px] items-center justify-center rounded-full sm:size-[212px]"
     >
       <span
@@ -35,6 +35,6 @@ export function RecordDial({ mode }: { mode: Mode }) {
       >
         <Mic className="size-8" strokeWidth={1.6} />
       </span>
-    </Link>
+    </AuthGuardLink>
   );
 }
