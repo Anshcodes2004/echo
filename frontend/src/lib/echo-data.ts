@@ -24,6 +24,7 @@ export type Recording = {
   title: string;
   mode: Mode;
   durationMin: number;
+  durationSeconds?: number;
   when: string;
   createdAt: number;
   speakers?: number;
@@ -429,4 +430,14 @@ export function formatClock(totalSeconds: number) {
   const s = totalSeconds % 60;
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+
+export function formatDuration(totalSeconds: number) {
+  const seconds = Math.max(0, Math.round(totalSeconds));
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins ? `${hours}h ${mins}m` : `${hours}h`;
 }

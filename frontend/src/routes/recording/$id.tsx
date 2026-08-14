@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -16,8 +16,19 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/echo/AppShell";
 import { Dot, Pill, SectionCard, TimeChip, type Tone } from "@/components/echo/primitives";
-import { PERSONAL_CATEGORY_META, type Recording, type TranscriptSegment } from "@/lib/echo-data";
-import { fetchRecording, retryAnalysis } from "@/lib/recording-api";
+import {
+  PERSONAL_CATEGORY_META,
+  formatDuration,
+  type Recording,
+  type TranscriptSegment,
+} from "@/lib/echo-data";
+import {
+  fetchRecording,
+  retryAnalysis,
+  renameRecording,
+  deleteRecording,
+  downloadTranscript,
+} from "@/lib/recording-api";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/recording/$id")({
@@ -187,49 +198,57 @@ function MeetingOverview({ recording }: { recording: Recording }) {
       </SectionCard>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <SectionCard title="Key Topics" icon={<FileText />} tone="dusty">
-          <ul className="space-y-3">
-            {(recording.topics ?? []).map((t) => (
-              <li key={t.id} className="flex items-center gap-3 text-sm">
-                <TimeChip time={t.time} className="-ml-1.5" />
-                <span>{t.text}</span>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
+        {recording.topics && recording.topics.length > 0 ? (
+          <SectionCard title="Key Topics" icon={<FileText />} tone="dusty">
+            <ul className="space-y-3">
+              {recording.topics.map((t) => (
+                <li key={t.id} className="flex items-center gap-3 text-sm">
+                  <TimeChip time={t.time} className="-ml-1.5" />
+                  <span>{t.text}</span>
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
+        ) : null}
 
-        <SectionCard title="Decisions" icon={<Sparkles />} tone="sage">
-          <ul className="space-y-4">
-            {(recording.decisions ?? []).map((d) => (
-              <li key={d.id}>
-                <TimeChip time={d.time} className="-ml-1.5" />
-                <p className="mt-0.5 text-sm">{d.text}</p>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
+        {recording.decisions && recording.decisions.length > 0 ? (
+          <SectionCard title="Decisions" icon={<Sparkles />} tone="sage">
+            <ul className="space-y-4">
+              {recording.decisions.map((d) => (
+                <li key={d.id}>
+                  <TimeChip time={d.time} className="-ml-1.5" />
+                  <p className="mt-0.5 text-sm">{d.text}</p>
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
+        ) : null}
 
-        <SectionCard title="Open Questions" icon={<HelpCircle />} tone="dusty">
-          <ul className="space-y-4">
-            {(recording.questions ?? []).map((q) => (
-              <li key={q.id}>
-                <TimeChip time={q.time} className="-ml-1.5" />
-                <p className="mt-0.5 text-sm">"{q.text}"</p>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
+        {recording.questions && recording.questions.length > 0 ? (
+          <SectionCard title="Open Questions" icon={<HelpCircle />} tone="dusty">
+            <ul className="space-y-4">
+              {recording.questions.map((q) => (
+                <li key={q.id}>
+                  <TimeChip time={q.time} className="-ml-1.5" />
+                  <p className="mt-0.5 text-sm">"{q.text}"</p>
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
+        ) : null}
 
-        <SectionCard title="Risks / Concerns" icon={<AlertTriangle />} tone="peach">
-          <ul className="space-y-4">
-            {(recording.risks ?? []).map((r) => (
-              <li key={r.id}>
-                <TimeChip time={r.time} className="-ml-1.5" />
-                <p className="mt-0.5 text-sm">"{r.text}"</p>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
+        {recording.risks && recording.risks.length > 0 ? (
+          <SectionCard title="Risks / Concerns" icon={<AlertTriangle />} tone="peach">
+            <ul className="space-y-4">
+              {recording.risks.map((r) => (
+                <li key={r.id}>
+                  <TimeChip time={r.time} className="-ml-1.5" />
+                  <p className="mt-0.5 text-sm">"{r.text}"</p>
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
+        ) : null}
       </div>
     </div>
   );
@@ -372,9 +391,44 @@ const meetingTabs = ["Overview", "Transcript", "Action Items", "Timeline"] as co
 
 function RecordingResult() {
   const loaderData = Route.useLoaderData();
+  const navigate = useNavigate();
   const [recording, setRecording] = useState<Recording>(loaderData);
   const [tab, setTab] = useState<(typeof meetingTabs)[number]>("Overview");
+  const [busy, setBusy] = useState<string | null>(null);
   const isMeeting = recording.mode === "meeting";
+
+  const handleRename = async () => {
+    const next = window.prompt("Rename recording", recording.title);
+    if (!next || !next.trim() || next.trim() === recording.title) return;
+    setBusy("Rename");
+    try {
+      setRecording(await renameRecording(recording.id, next.trim()));
+    } catch (cause) {
+      window.alert(cause instanceof Error ? cause.message : "Could not rename recording.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleDownload = () => downloadTranscript(recording);
+
+  const handleDelete = async () => {
+    if (!window.confirm("Delete this recording? This can't be undone.")) return;
+    setBusy("Delete");
+    try {
+      await deleteRecording(recording.id);
+      void navigate({ to: "/history" });
+    } catch (cause) {
+      window.alert(cause instanceof Error ? cause.message : "Could not delete recording.");
+      setBusy(null);
+    }
+  };
+
+  const actions = [
+    { label: "Rename", icon: Pencil, onClick: handleRename },
+    { label: "Download", icon: Download, onClick: handleDownload },
+    { label: "Delete", icon: Trash2, onClick: handleDelete },
+  ] as const;
 
   return (
     <AppShell>
@@ -387,7 +441,7 @@ function RecordingResult() {
             <Pill tone={isMeeting ? "lavender" : "sage"}>{recording.mode}</Pill>
           </div>
           <p className="mt-1.5 text-[13px] text-muted-foreground">
-            {recording.durationMin} min
+            {formatDuration(recording.durationSeconds ?? recording.durationMin * 60)}
             {isMeeting && recording.speakers ? ` • ${recording.speakers} speakers` : ""} •{" "}
             {recording.when}
           </p>
@@ -397,16 +451,14 @@ function RecordingResult() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {[
-            { label: "Rename", icon: Pencil },
-            { label: "Download", icon: Download },
-            { label: "Delete", icon: Trash2 },
-          ].map(({ label, icon: Icon }) => (
+          {actions.map(({ label, icon: Icon, onClick }) => (
             <button
               key={label}
               type="button"
+              onClick={() => void onClick()}
+              disabled={busy === label}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-[13px] transition-colors hover:bg-secondary",
+                "inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-[13px] transition-colors hover:bg-secondary disabled:opacity-50",
                 label === "Delete" && "text-coral hover:bg-peach",
               )}
             >

@@ -29,6 +29,33 @@ export async function retryAnalysis(id: string): Promise<Recording> {
   if (!response.ok) throw new Error("Could not retry analysis.");
   return toRecording(await response.json());
 }
+export async function renameRecording(id: string, title: string): Promise<Recording> {
+  const response = await fetch(`${api}/api/recordings/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title }),
+  });
+  if (!response.ok) throw new Error("Could not rename recording.");
+  return toRecording(await response.json());
+}
+
+export function downloadTranscript(recording: Recording) {
+  const lines = [
+    recording.title,
+    `${recording.mode} • ${recording.when} • ${recording.durationMin} min`,
+    "",
+    ...recording.transcript.map((s) => `[${s.time}]${s.speaker ? ` ${s.speaker}:` : ""} ${s.text}`),
+  ];
+  const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${recording.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "recording"}-transcript.txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
 
 function toRecording(raw: any): Recording {
   const transcript: TranscriptSegment[] = (raw.transcript ?? []).map((segment: any) => ({
@@ -67,6 +94,7 @@ function toRecording(raw: any): Recording {
     title: raw.title,
     mode: raw.mode as Mode,
     durationMin: Math.max(1, Math.round((raw.durationSeconds ?? 0) / 60)),
+    durationSeconds: raw.durationSeconds ?? 0,
     when: new Date(raw.createdAt).toLocaleDateString(),
     createdAt: new Date(raw.createdAt).getTime(),
     speakers: new Set(transcript.map((s) => s.speaker).filter(Boolean)).size || undefined,

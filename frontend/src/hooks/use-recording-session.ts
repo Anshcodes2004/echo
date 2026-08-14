@@ -51,16 +51,18 @@ export function useRecordingSession(mode: Mode, onComplete: (id: string) => void
       try {
         if (!navigator.mediaDevices?.getUserMedia || !window.WebSocket || !window.AudioContext)
           throw new Error("This browser does not support live microphone recording.");
-        const response = await fetch(`${api}/api/recordings`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mode }),
-        });
+        const [response, mic] = await Promise.all([
+          fetch(`${api}/api/recordings`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mode }),
+          }),
+          navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
+          }),
+        ]);
         if (!response.ok) throw new Error("Could not start a recording session.");
         const recording = (await response.json()) as { id: string };
-        const mic = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
-        });
         if (cancelled) {
           mic.getTracks().forEach((t) => t.stop());
           return;

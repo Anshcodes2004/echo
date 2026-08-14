@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Sparkles, Users } from "lucide-react";
 import { AppShell } from "@/components/echo/AppShell";
 import { RecordDial } from "@/components/echo/RecordDial";
-import { type Mode, type Recording } from "@/lib/echo-data";
+import { type Mode, type Recording, formatDuration } from "@/lib/echo-data";
 import { fetchRecordings } from "@/lib/recording-api";
 import { cn } from "@/lib/utils";
 
@@ -46,7 +46,11 @@ const modes = [
 function Home() {
   const [mode, setMode] = useState<Mode>("personal");
   const [recent, setRecent] = useState<Recording[]>([]);
-  useEffect(() => { void fetchRecordings().then((items) => setRecent(items.slice(0, 4))).catch(() => undefined); }, []);
+  useEffect(() => {
+    void fetchRecordings()
+      .then((items) => setRecent(items.slice(0, 4)))
+      .catch(() => undefined);
+  }, []);
 
   return (
     <AppShell>
@@ -136,7 +140,7 @@ function Home() {
                     </span>
                   </span>
                   <span className="shrink-0 font-mono text-xs text-muted-foreground">
-                    {r.durationMin}m · {r.when}
+                    {formatDuration(r.durationSeconds ?? r.durationMin * 60)} · {r.when}
                   </span>
                 </Link>
               </li>

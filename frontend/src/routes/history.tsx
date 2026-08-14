@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { AppShell } from "@/components/echo/AppShell";
 import { EmptyState, Pill } from "@/components/echo/primitives";
-import { type Mode, type Recording } from "@/lib/echo-data";
+import { type Mode, type Recording, formatDuration } from "@/lib/echo-data";
 import { fetchRecordings } from "@/lib/recording-api";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +41,11 @@ function History() {
   const [sort, setSort] = useState<(typeof sorts)[number]["key"]>("newest");
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
-  useEffect(() => { void fetchRecordings().then(setRecordings).catch(() => setLoadError("Could not load recordings. Is the backend running?")); }, []);
+  useEffect(() => {
+    void fetchRecordings()
+      .then(setRecordings)
+      .catch(() => setLoadError("Could not load recordings. Is the backend running?"));
+  }, []);
 
   const list = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -57,7 +61,7 @@ function History() {
           ? a.createdAt - b.createdAt
           : b.durationMin - a.durationMin,
     );
-  }, [query, filter, sort]);
+  }, [query, filter, sort, recordings]);
 
   return (
     <AppShell>
@@ -144,7 +148,8 @@ function History() {
                     <Pill tone={r.mode === "meeting" ? "lavender" : "sage"}>{r.mode}</Pill>
                   </div>
                   <p className="mt-1 text-[13px] text-muted-foreground">
-                    {r.mode === "meeting" ? "Meeting" : "Personal"} · {r.durationMin} min · {r.when}
+                    {r.mode === "meeting" ? "Meeting" : "Personal"} ·{" "}
+                    {formatDuration(r.durationSeconds ?? r.durationMin * 60)} · {r.when}
                   </p>
                   <p className="mt-3 text-sm leading-relaxed text-foreground/75">"{r.preview}"</p>
                 </div>
