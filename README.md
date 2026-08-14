@@ -26,10 +26,11 @@ JWT_SECRET=9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
 
 ## Install & Run (development)
 
-STEP 1: create .env inside `backend/`  and copy paste values as mentioned above
+### STEP 1: 
+Create .env inside `backend/`  and copy paste values as mentioned above
 
 
-STEP 2:
+### STEP 2:
 From the repository root:
 
 ```bash
@@ -38,7 +39,7 @@ npm install    # or pnpm install
 npm run dev    # runs the TypeScript dev server (tsx watch)
 ```
 
-STEP 3:
+### STEP 3:
 Start the frontend in a separate terminal:
 
 ```bash
@@ -46,6 +47,45 @@ cd ../frontend
 npm install
 npm run dev
 ```
+### STEP 4 (For User-Specific Recording History):
+
+The submitted version returns no recordings because authentication/user-scoping is not enabled.
+
+
+To enable user-specific recordings, change in file: ```backend/routes/recordings.routes.ts```:
+```bash
+const recordings = await service.list({
+    mode: input.mode,
+    query: input.query,
+    limit: input.limit,
+    skip: input.offset,
+  });
+```
+to:
+```bash
+const userId = request.userId as string;
+
+const recordings = await service.list(userId, {
+  mode: input.mode,
+  query: input.query,
+  limit: input.limit,
+  skip: input.offset,
+});
+```
+Also ensure service.list() uses ```userId``` to filter the database query.
+After making this change, restart the backend:
+```bash
+cd backend
+npm run dev
+```
+
+## Troubleshooting
+
+- In case of "microphone permission" taking too much time, refresh the browser by ```ctrl + R```
+- "Invalid backend environment configuration": check that all required env variables are present and `JWT_SECRET` is at least 32 characters.
+- Port already in use: stop the other process or change `PORT`.
+- CORS errors: ensure `CORS_ORIGIN` matches your frontend origin (including port).
+
 
 ## MongoDB
 
@@ -62,12 +102,6 @@ cd backend
 node scripts/printRecording.mjs <recordingId>
 node scripts/e2e.mjs
 ```
-
-## Troubleshooting
-
-- "Invalid backend environment configuration": check that all required env variables are present and `JWT_SECRET` is at least 32 characters.
-- Port already in use: stop the other process or change `PORT`.
-- CORS errors: ensure `CORS_ORIGIN` matches your frontend origin (including port).
 
 ## Security
 
